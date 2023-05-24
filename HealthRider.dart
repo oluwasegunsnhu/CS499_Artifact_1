@@ -1,40 +1,39 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(HealthRiderApp());
+  runApp(InventoryManagementApp());
 }
 
-class HealthRiderApp extends StatelessWidget {
+class InventoryManagementApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'HealthRider',
+      title: 'Inventory Management',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: HealthRiderHomePage(),
+      home: InventoryHomePage(),
     );
   }
 }
 
-class HealthRiderHomePage extends StatefulWidget {
+class InventoryHomePage extends StatefulWidget {
   @override
-  _HealthRiderHomePageState createState() => _HealthRiderHomePageState();
+  _InventoryHomePageState createState() => _InventoryHomePageState();
 }
 
-class _HealthRiderHomePageState extends State<HealthRiderHomePage> {
-  String modeOfTransportation = 'biking';
-  double weight = 0.0;
-  double distanceTraveled = 0.0;
-  double caloriesBurned = 0.0;
+class _InventoryHomePageState extends State<InventoryHomePage> {
+  List<Product> products = [];
 
-  void calculateCaloriesBurned() {
+  void addProduct(String name, int quantity) {
     setState(() {
-      if (modeOfTransportation == 'biking' || modeOfTransportation == 'walking') {
-        caloriesBurned = weight * distanceTraveled * 0.5;
-      } else {
-        caloriesBurned = weight * distanceTraveled * 0.2;
-      }
+      products.add(Product(name: name, quantity: quantity));
+    });
+  }
+
+  void removeProduct(int index) {
+    setState(() {
+      products.removeAt(index);
     });
   }
 
@@ -42,59 +41,109 @@ class _HealthRiderHomePageState extends State<HealthRiderHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('HealthRider'),
+        title: Text('Inventory Management'),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Mode of Transportation:'),
-            DropdownButton<String>(
-              value: modeOfTransportation,
-              onChanged: (String? newValue) {
-                setState(() {
-                  modeOfTransportation = newValue!;
-                });
+      body: ListView.builder(
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Text(products[index].name),
+            subtitle: Text('Quantity: ${products[index].quantity}'),
+            trailing: IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () {
+                removeProduct(index);
               },
-              items: <String>['biking', 'walking', 'driving', 'running']
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
             ),
-            SizedBox(height: 16.0),
-            Text('Weight (in kg):'),
-            TextField(
-              onChanged: (value) {
-                setState(() {
-                  weight = double.parse(value);
-                });
-              },
-              keyboardType: TextInputType.number,
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => AddProductDialog(addProduct),
+          );
+        },
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class Product {
+  final String name;
+  final int quantity;
+
+  Product({required this.name, required this.quantity});
+}
+
+class AddProductDialog extends StatefulWidget {
+  final Function(String, int) addProduct;
+
+  AddProductDialog(this.addProduct);
+
+  @override
+  _AddProductDialogState createState() => _AddProductDialogState();
+}
+
+class _AddProductDialogState extends State<AddProductDialog> {
+  late TextEditingController nameController;
+  late TextEditingController quantityController;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController();
+    quantityController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    quantityController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Add Product'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: nameController,
+            decoration: InputDecoration(
+              labelText: 'Product Name',
             ),
-            SizedBox(height: 16.0),
-            Text('Distance Traveled (in km):'),
-            TextField(
-              onChanged: (value) {
-                setState(() {
-                  distanceTraveled = double.parse(value);
-                });
-              },
-              keyboardType: TextInputType.number,
+          ),
+          TextField(
+            controller: quantityController,
+            decoration: InputDecoration(
+              labelText: 'Quantity',
             ),
-            SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: calculateCaloriesBurned,
-              child: Text('Calculate'),
-            ),
-            SizedBox(height: 16.0),
-            Text('Calories Burned: $caloriesBurned cal'),
-          ],
+            keyboardType: TextInputType.number,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Cancel'),
         ),
-      ),
+        ElevatedButton(
+          onPressed: () {
+            String name = nameController.text;
+            int quantity = int.tryParse(quantityController.text) ?? 0;
+            widget.addProduct(name, quantity);
+            Navigator.pop(context);
+          },
+          child: Text('Add'),
+        ),
+      ],
     );
   }
 }
